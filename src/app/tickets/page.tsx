@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import Link from 'next/link';
 import { initialTickets } from '@/data';
 import { ticketPath } from '@/paths';
@@ -26,7 +27,13 @@ const TicketsPage = () => {
           >
             <div>{TICKET_ICONS[ticket.status]}</div>
             <h3 className="truncate text-lg font-semibold">{ticket.title}</h3>
-            <p className="truncate text-sm text-slate-500">{ticket.content}</p>
+            <p
+              className={clsx('truncate text-sm text-slate-500', {
+                'line-through': ticket.status === 'DONE',
+              })}
+            >
+              {ticket.content}
+            </p>
 
             <Link href={ticketPath(ticket.id)} className="text-sm underline">
               View
