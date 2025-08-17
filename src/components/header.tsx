@@ -17,7 +17,7 @@ const Header = () => {
             <h1 className="text-lg font-semibold">TicketBounty</h1>
           </Link>
         </div>
-        <div className="align-items flex gap-x-2">
+        <div className="items-center flex gap-x-2">
           <ThemeSwitcher />
           <Link
             href={ticketsPath()}
