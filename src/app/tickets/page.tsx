@@ -25,7 +25,7 @@ const TicketsPage = () => {
         description="All your tickets in one place"
       />
 
-      <div className="animate-fade-from-top flex flex-1 flex-col items-center gap-y-4">
+      <div className="flex flex-1 animate-fade-from-top flex-col items-center gap-y-4">
         {tickets.map((ticket) => (
           <TicketItem key={ticket.id} ticket={ticket} />
         ))}

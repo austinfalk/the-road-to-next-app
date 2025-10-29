@@ -9,6 +9,7 @@ CLAUDE.md - Project Documentation for AI-Assisted Development
 - **Runtime**: Bun (JavaScript/TypeScript runtime and package manager)
 - **Frontend**: React 19.2.0 with TypeScript
 - **Styling**: Tailwind CSS v4.1.16 with CSS-first configuration
+- **Toolchain**: Biome 2.3.2 (formatting, linting, and import organization)
 - **UI Components**: Radix UI primitives (shadcn/ui style)
 - **Theme**: next-themes v0.4.6 for dark mode support
 - **Icons**: lucide-react v0.548.0
@@ -101,8 +102,10 @@ the-road-to-next-app/
 bun run dev         # Start development server with Turbopack and Bun runtime
 bun run build       # Build for production
 bun run start       # Start production server
-bun run lint        # Run ESLint
-bun run lint-fix    # Auto-fix linting issues
+bun run lint        # Run Biome linter
+bun run lint-fix    # Run Biome check with auto-fix (format + lint + organize imports)
+bun run format      # Run Biome formatter only
+bun run check       # Run all Biome checks without writing
 bun run type        # TypeScript type checking (no emit)
 ```
 
@@ -118,8 +121,12 @@ bun run dev
 # Type check while developing
 bun run type
 
-# Lint and auto-fix
+# Format, lint, and organize imports
 bun run lint-fix
+
+# Or run checks individually
+bun run format      # Format code
+bun run lint        # Lint only
 ```
 
 ## Application Routes
@@ -371,7 +378,7 @@ import { cn } from '@/lib/utils';
   const Component = ({ title }: ComponentProps) => { /* ... */ };
   ```
 - **Async Functions**: Use `async/await` over `.then()`
-- **Import Order**: Group by external, internal, types (handled by ESLint)
+- **Import Order**: Automatically organized by Biome (external, internal, types)
 
 ## Extending This Project
 
@@ -431,9 +438,8 @@ Current app uses React's built-in state (useState, useEffect). For complex state
 - `tailwind-merge` (3.3.1): Smart class merging
 
 ### Development Dependencies
+- `@biomejs/biome` (2.3.2): Fast formatter and linter (replaces ESLint + Prettier)
 - `typescript` (5.9.3): Type checking
-- `eslint`: Linting with Next.js config
-- `prettier`: Code formatting
 - `tailwindcss` (4.1.16): CSS framework
 - `@types/*`: TypeScript definitions
 
@@ -480,7 +486,7 @@ Current app uses React's built-in state (useState, useEffect). For complex state
 ### Development Tips
 1. **Hot Reload**: Dev server auto-reloads on file changes
 2. **Type Errors**: Run `bun run type` for full TypeScript check
-3. **ESLint**: Configure in `eslint.config.js` or use `--fix` flag
+3. **Biome**: Configure in `biome.json` or use `bun run lint-fix` for auto-fixes
 4. **Port Conflicts**: Next.js will use next available port if 3000 taken
 
 ## Notes for AI Assistants
