@@ -1,5 +1,6 @@
 import { LucideMessageSquareWarning } from 'lucide-react';
-import { cloneElement, ReactElement, SVGProps } from 'react';
+import type { ReactElement, SVGProps } from 'react';
+import { cloneElement } from 'react';
 
 type PlaceholderProps = {
   label: string;
