@@ -99,14 +99,17 @@ the-road-to-next-app/
 ## Available Scripts
 
 ```bash
-bun run dev         # Start development server with Turbopack and Bun runtime
-bun run build       # Build for production
-bun run start       # Start production server
-bun run lint        # Run Biome linter
-bun run lint-fix    # Run Biome check with auto-fix (format + lint + organize imports)
-bun run format      # Run Biome formatter only
-bun run check       # Run all Biome checks without writing
-bun run type        # TypeScript type checking (no emit)
+bun run dev              # Start development server with Turbopack and Bun runtime
+bun run build            # Build for production
+bun run start            # Start production server
+bun run type             # TypeScript type checking (no emit)
+bun run lint             # Run Biome linter
+bun run lint-fix         # Run Biome check with auto-fix (safe fixes only)
+bun run lint-fix-unsafe  # Run Biome with unsafe fixes (includes Tailwind class sorting)
+bun run format           # Run Biome formatter only
+bun run check            # Run all Biome checks without writing
+bun run check:all        # Run type checking + Biome checks
+bun run clean            # Remove build artifacts and dependencies
 ```
 
 ### Development Workflow
@@ -255,19 +258,25 @@ Tailwind CSS uses CSS variables defined in globals.css for theme colors:
 
 ## TypeScript Configuration
 
-### Key Settings
+### Key Settings (Optimized for Next.js 16 + Bun)
 - **Strict Mode**: Enabled with additional safety checks
 - **Path Alias**: `@/*` maps to `./src/*`
 - **Module System**: Preserve (for Next.js compatibility)
-- **Module Resolution**: bundler mode
-- **JSX**: react-jsx (automatic runtime)
+- **Module Resolution**: bundler mode (for Bun compatibility)
+- **JSX**: react-jsx (automatic JSX runtime - required by Next.js)
 - **Target**: ESNext (modern JavaScript features)
+- **No Emit**: TypeScript only type checks; Bun handles transpilation
 
 ### Type Safety
 - `strict: true` - All strict checks enabled
 - `noUncheckedIndexedAccess: true` - Safe array/object access
 - `noFallthroughCasesInSwitch: true` - Prevent switch fallthrough bugs
+- `noUnusedLocals: true` - Catch unused variables (TypeScript checks at compile-time type level; Biome checks during linting via rules like `noUnusedVariables`)
+- `noUnusedParameters: true` - Catch unused function parameters
+- `forceConsistentCasingInFileNames: true` - Prevents macOS→Linux deployment bugs
 - `skipLibCheck: true` - Faster builds
+
+**Important**: Next.js may auto-format `tsconfig.json` when running `next dev`. This is normal behavior and doesn't change functionality.
 
 ## Next.js 16 Patterns
 
@@ -439,9 +448,112 @@ Current app uses React's built-in state (useState, useEffect). For complex state
 
 ### Development Dependencies
 - `@biomejs/biome` (2.3.2): Fast formatter and linter (replaces ESLint + Prettier)
+- `@tailwindcss/postcss` (4.1.16): PostCSS plugin for Tailwind CSS v4
 - `typescript` (5.9.3): Type checking
 - `tailwindcss` (4.1.16): CSS framework
+- `tw-animate-css` (1.4.0): Animation utilities for Tailwind
 - `@types/*`: TypeScript definitions
+
+**Note**: This project does NOT use `bun-plugin-tailwind` as it's only needed for standalone Bun server apps, not Next.js projects. Next.js handles Tailwind CSS processing via `@tailwindcss/postcss`.
+
+## Biome Configuration
+
+This project uses **Biome 2.3.2** instead of ESLint + Prettier for faster, unified tooling.
+
+### Configuration Highlights (`biome.json`)
+
+**VCS Integration**
+```json
+"vcs": {
+  "enabled": true,
+  "clientKind": "git",
+  "useIgnoreFile": true
+}
+```
+- Biome respects `.gitignore` patterns
+- Lock files (like `bun.lock`) are automatically excluded from linting
+
+**Code Style**
+- Single quotes for JavaScript/TypeScript
+- Double quotes for JSX attributes
+- Semicolons always
+- Trailing commas everywhere
+- 80-character line width
+
+**Linting Rules**
+- `useImportType: "error"` - Enforces TypeScript type-only imports
+- `useExhaustiveDependencies: "warn"` - React hooks dependency checks
+- `useSortedClasses` (nursery/experimental) - Tailwind CSS class sorting
+
+### Tailwind Class Sorting (Experimental)
+
+The `useSortedClasses` rule is in Biome's "nursery" (experimental):
+
+```json
+"nursery": {
+  "useSortedClasses": {
+    "level": "warn",
+    "fix": "unsafe",
+    "options": {
+      "attributes": ["classList"],
+      "functions": ["clsx", "cva", "cn", "tw"]
+    }
+  }
+}
+```
+
+**Limitations:**
+- Doesn't support screen variants (`md:`, `lg:`, etc.)
+- Doesn't read `tailwind.config.ts`
+- No custom plugin support
+- Marked as "unsafe" fix (won't auto-apply on save)
+
+**Usage:**
+- `bun run lint-fix` - Applies safe fixes only
+- `bun run lint-fix-unsafe` - Applies safe + unsafe fixes (includes class sorting)
+
+### IDE Integration
+
+**VS Code**: Install the Biome extension
+**Zed Editor**: Biome support built-in via LSP
+- If Zed shows errors on `bun.lock`, restart the editor (VCS integration should exclude it)
+
+## Railway Deployment (Railpack)
+
+This project is optimized for Railway deployment using Railpack v0.9.2+.
+
+### Key Configuration Decisions
+
+**No `packageManager` Field**
+- Railway's Railpack detects package managers automatically
+- Having `"packageManager": "bun@1.3.1"` causes Node.js to be installed alongside Bun
+- Solution: Remove `packageManager` field, use `engines.bun` instead
+
+**Current Setup:**
+```json
+{
+  "engines": {
+    "bun": ">=1.3.1"
+  }
+}
+```
+
+**Result:** Railway installs Bun runtime only (no Node.js)
+
+### Railpack Auto-Detection
+
+Railpack detects Bun via:
+1. `bun.lock` file presence
+2. `engines.bun` field in `package.json`
+3. Bun-specific scripts
+
+### Deployment Checklist
+- ✅ No `packageManager` field in `package.json`
+- ✅ `engines.bun` specifies version
+- ✅ `bun.lock` committed to git
+- ✅ No `bun-plugin-tailwind` dependency (not needed for Next.js)
+- ✅ Build script uses Bun: `bun run --bun next build`
+- ✅ Start script uses Bun: `bun run --bun next start`
 
 ## Performance Considerations
 
@@ -521,7 +633,30 @@ While no tests exist currently, consider adding:
 
 ---
 
-**Last Updated**: 2025-10-29
+## Changelog
+
+### 2025-10-30 - Configuration Optimization
+- **Removed** `packageManager` field from `package.json` (fixes Railway Node.js detection)
+- **Removed** `bun-plugin-tailwind` dependency (not needed for Next.js)
+- **Updated** `tsconfig.json` with optimized Next.js 16 + Bun settings:
+  - Added `noUnusedLocals: true` and `noUnusedParameters: true`
+  - Added `forceConsistentCasingInFileNames: true` for cross-platform safety
+  - Kept `jsx: "react-jsx"` as required by Next.js
+- **Added** `biome.json` configuration with Tailwind class sorting (experimental)
+- **Added** `lint-fix-unsafe` script for applying unsafe Biome fixes
+- **Added** comprehensive Biome and Railway deployment documentation
+- **Verified** Railway deployment uses Bun runtime only (no Node.js)
+
+### 2025-10-29 - Initial Setup
+- Project created with Next.js 16 App Router
+- Configured with Bun runtime and Biome tooling
+- Implemented ticket management demo application
+
+---
+
+**Last Updated**: 2025-10-30
 **Next.js Version**: 16.0.1
+**Bun Version**: 1.3.1+
+**Biome Version**: 2.3.2
 **Project Version**: 0.1.0
 **Learning Resource**: "The Road to Next" Tutorial Series
