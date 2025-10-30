@@ -100,7 +100,7 @@ the-road-to-next-app/
 
 ```bash
 bun run dev              # Start development server with Turbopack and Bun runtime
-bun run build            # Build for production
+bun run build            # Build for production (includes TypeScript type checking)
 bun run start            # Start production server
 bun run type             # TypeScript type checking (no emit)
 bun run lint             # Run Biome linter
@@ -109,8 +109,9 @@ bun run lint-fix-unsafe  # Run Biome with unsafe fixes (includes Tailwind class 
 bun run format           # Run Biome formatter only
 bun run check            # Run all Biome checks without writing
 bun run check:all        # Run type checking + Biome checks
-bun run clean            # Remove build artifacts and dependencies
 ```
+
+**Note:** Biome handles linting and formatting but does NOT perform full TypeScript type checking. Use `bun run type` for type checking during development, or `bun run check:all` to run both type checking and Biome checks.
 
 ### Development Workflow
 ```bash
@@ -130,6 +131,7 @@ bun run lint-fix
 # Or run checks individually
 bun run format      # Format code
 bun run lint        # Lint only
+bun run type        # Type check only
 ```
 
 ## Application Routes
@@ -524,36 +526,84 @@ This project is optimized for Railway deployment using Railpack v0.9.2+.
 
 ### Key Configuration Decisions
 
-**No `packageManager` Field**
-- Railway's Railpack detects package managers automatically
-- Having `"packageManager": "bun@1.3.1"` causes Node.js to be installed alongside Bun
-- Solution: Remove `packageManager` field, use `engines.bun` instead
+**Minimal Configuration Approach**
+- Railway's Railpack auto-detects Bun projects via `bun.lock` file
+- No `packageManager` field (causes unnecessary Node.js installation)
+- No `engines` field (not required; Railpack uses latest Bun by default)
+- No `type: "module"` field (not required for Next.js + Bun)
+- Simple `railway.json` with only builder specification
+
+**IMPORTANT: Script Naming Observation**
+- ⚠️ **Observed behavior**: Removing a `clean` script that referenced `node_modules` resolved dual runtime installation
+- The exact mechanism is unclear, but scripts referencing Node.js-related directories may influence Railpack's detection
+- ❌ Script that was present during dual runtime: `"clean": "rm -rf .next node_modules bun.lock"`
+- ✅ After removal: Bun-only runtime restored
 
 **Current Setup:**
 ```json
 {
-  "engines": {
-    "bun": ">=1.3.1"
+  "scripts": {
+    "build": "bun run --bun next build",
+    "start": "bun run --bun next start",
+    "dev": "bun run --bun next dev"
+  },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "sharp",
+    "unrs-resolver"
+  ]
+}
+```
+
+**railway.json:**
+```json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK"
   }
 }
 ```
 
-**Result:** Railway installs Bun runtime only (no Node.js)
+**Result:** Railway installs Bun runtime only (no Node.js via mise)
 
 ### Railpack Auto-Detection
 
 Railpack detects Bun via:
-1. `bun.lock` file presence
-2. `engines.bun` field in `package.json`
-3. Bun-specific scripts
+1. `bun.lock` file presence (primary detection method)
+2. Bun-specific scripts using `bun run --bun`
+3. Absence of Node.js-specific configurations
 
 ### Deployment Checklist
 - ✅ No `packageManager` field in `package.json`
-- ✅ `engines.bun` specifies version
+- ✅ No `engines` field in `package.json` (optional, not required)
+- ✅ No utility scripts referencing `node_modules` or other Node.js-related directories
 - ✅ `bun.lock` committed to git
 - ✅ No `bun-plugin-tailwind` dependency (not needed for Next.js)
 - ✅ Build script uses Bun: `bun run --bun next build`
 - ✅ Start script uses Bun: `bun run --bun next start`
+- ✅ Simple `railway.json` with only `builder: "RAILPACK"` specified
+
+### Troubleshooting Dual Runtime Installation
+
+**What we know for certain:**
+- Removing the `clean` script that contained `node_modules` reference fixed the dual runtime issue
+- Current minimal configuration results in Bun-only runtime
+
+**Fields that were tested and removed during troubleshooting:**
+1. `packageManager` field in package.json
+2. `engines.bun` field  
+3. `type: "module"` field
+4. `"bun"` in `trustedDependencies` array
+5. Scripts containing `node_modules` directory references
+
+**Note:** The exact cause-and-effect relationship between these fields and Railpack's behavior is not definitively proven. The current working configuration simply avoids all of these potentially problematic patterns.
+
+**What does NOT cause issues:**
+1. ✅ `@types/node` in devDependencies (confirmed safe)
+2. ✅ `@types/bun` in devDependencies (confirmed safe)
+3. ✅ `bun.lock` file
+4. ✅ Using `bun run --bun` in scripts
 
 ## Performance Considerations
 
@@ -635,17 +685,25 @@ While no tests exist currently, consider adding:
 
 ## Changelog
 
-### 2025-10-30 - Configuration Optimization
-- **Removed** `packageManager` field from `package.json` (fixes Railway Node.js detection)
+### 2025-10-30 - Configuration Optimization & Railway Deployment Fix
+- **Removed** `packageManager` field from `package.json`
+- **Removed** `engines` field from `package.json`
+- **Removed** `type: "module"` field from `package.json`
+- **Removed** `"bun"` from `trustedDependencies` array
+- **Removed** `clean` script that referenced `node_modules` (**KEY FIX**: removing this resolved dual runtime issue)
+- **Re-added** `type` script after clarifying that Biome doesn't do full TypeScript type checking
 - **Removed** `bun-plugin-tailwind` dependency (not needed for Next.js)
+- **Simplified** `railway.json` to minimal configuration with only builder specification
 - **Updated** `tsconfig.json` with optimized Next.js 16 + Bun settings:
   - Added `noUnusedLocals: true` and `noUnusedParameters: true`
   - Added `forceConsistentCasingInFileNames: true` for cross-platform safety
   - Kept `jsx: "react-jsx"` as required by Next.js
 - **Added** `biome.json` configuration with Tailwind class sorting (experimental)
 - **Added** `lint-fix-unsafe` script for applying unsafe Biome fixes
-- **Added** comprehensive Biome and Railway deployment documentation
-- **Verified** Railway deployment uses Bun runtime only (no Node.js)
+- **Added** comprehensive Biome and Railway deployment documentation with troubleshooting section
+- **Finding**: Removing the `clean` script that referenced `node_modules` resolved dual runtime installation
+- **Verified** Railway deployment now uses Bun-only runtime (no Node.js installed via mise)
+- **Note**: Exact cause-and-effect relationships between removed fields and Railpack behavior not definitively proven; current minimal configuration works reliably
 
 ### 2025-10-29 - Initial Setup
 - Project created with Next.js 16 App Router
