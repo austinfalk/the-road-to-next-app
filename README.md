@@ -80,9 +80,10 @@ bun run lint-fix         # Auto-fix with Biome (safe fixes only)
 bun run lint-fix-unsafe  # Auto-fix with Biome (safe + unsafe fixes, includes Tailwind sorting)
 bun run format           # Format code with Biome
 bun run check            # Run all Biome checks without writing
-bun run check:all        # Run both type checking and Biome checks
-bun run clean            # Remove build artifacts and dependencies
+bun run check:all        # Run type checking + Biome checks
 ```
+
+**Note:** Biome handles linting and formatting but does NOT perform full TypeScript type checking. Use `bun run type` for type validation, or `bun run check:all` to run both.
 
 ### Code Quality Workflow
 
@@ -188,12 +189,29 @@ import { ticketPath, ticketsPath } from '@/paths';
 
 This project is optimized for deployment on Railway with Railpack (v0.9.2+):
 
-- **Bun runtime only** - No Node.js installed (removed `packageManager` field from `package.json`)
-- **Zero-config deployment** - Railpack auto-detects Bun via `bun.lock` and `engines.bun`
+- **Bun runtime only** - No Node.js installed via mise
+- **Minimal configuration** - Simple `railway.json` with only builder specification
+- **Auto-detection** - Railpack detects Bun via `bun.lock` file
+- **No `engines` field** - Not required; Railpack uses latest Bun by default
+- **No `packageManager` field** - Removed to prevent Node.js installation
+- **Clean scripts** - No references to `node_modules` or Node.js directories (triggers Node.js detection)
 - **Environment variables supported**
 - **Tailwind CSS v4** - Processed via `@tailwindcss/postcss` (no separate Bun plugin needed)
 
-See `CLAUDE.md` for detailed deployment instructions and configuration options.
+### Important Deployment Notes
+
+⚠️ **Configuration decisions that maintain Bun-only runtime:**
+
+This project avoids several fields that were present during dual runtime installation:
+- No `packageManager` field
+- No `engines` field
+- No `type: "module"` field
+- No utility scripts referencing `node_modules` directory
+- No `"bun"` in `trustedDependencies` array
+
+**Key finding:** Removing the `clean` script that referenced `node_modules` resolved the dual runtime issue. The exact mechanism is unclear, but the current minimal configuration works reliably.
+
+See `CLAUDE.md` for detailed deployment instructions, troubleshooting steps, and the complete history of what was tested.
 
 ## Learn More
 

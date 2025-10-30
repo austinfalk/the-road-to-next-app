@@ -17,12 +17,14 @@
   "scripts": {
     "build": "bun run --bun next build",
     "check": "biome check .",
+    "check:all": "bun run type && bun run check",
     "dev": "bun run --bun next dev",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "lint-fix": "biome check --write .",
     "lint-fix-unsafe": "biome check --write --unsafe .",
-    "start": "bun run --bun next start"
+    "start": "bun run --bun next start",
+    "type": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.7",
