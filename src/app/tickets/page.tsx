@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Heading } from '@/components/heading';
 import { TicketItem } from '@/features/ticket/components/ticket-item';
 import { getTickets } from '@/features/ticket/queries/get-tickets';
-import { Ticket } from '@/features/ticket/types';
+import type { Ticket } from '@/features/ticket/types';
 
 const TicketsPage = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -25,7 +25,7 @@ const TicketsPage = () => {
         description="All your tickets in one place"
       />
 
-      <div className="animate-fade-from-top flex flex-1 flex-col items-center gap-y-4">
+      <div className="flex flex-1 animate-fade-from-top flex-col items-center gap-y-4">
         {tickets.map((ticket) => (
           <TicketItem key={ticket.id} ticket={ticket} />
         ))}
