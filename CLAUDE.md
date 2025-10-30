@@ -271,7 +271,7 @@ Tailwind CSS uses CSS variables defined in globals.css for theme colors:
 - `strict: true` - All strict checks enabled
 - `noUncheckedIndexedAccess: true` - Safe array/object access
 - `noFallthroughCasesInSwitch: true` - Prevent switch fallthrough bugs
-- `noUnusedLocals: true` - Catch unused variables (Biome doesn't check this at type level)
+- `noUnusedLocals: true` - Catch unused variables (TypeScript checks at compile-time type level; Biome checks during linting via rules like `noUnusedVariables`)
 - `noUnusedParameters: true` - Catch unused function parameters
 - `forceConsistentCasingInFileNames: true` - Prevents macOS→Linux deployment bugs
 - `skipLibCheck: true` - Faster builds
